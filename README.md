@@ -6,30 +6,44 @@ only a harmless title. YouTube never appears there.
 
 ## Running
 
-Requires Go 1.22 or newer.
+The app runs in Docker. Use the prebuilt image:
 
 ```sh
-go run .
+docker run -d --name rickroll -p 8080:8080 ghcr.io/frizzay/rickroll:latest
+```
+
+Or build the image yourself:
+
+```sh
+docker build -t rickroll .
+docker run -d --name rickroll -p 8080:8080 rickroll
 ```
 
 The server then listens on http://localhost:8080. Any path works, e.g.
 `/photos/summer-2026`. Only `/r` is reserved.
 
+To use a different host port, change only the left side of `-p`, e.g. `-p 80:8080`.
+
 ## Customizing the preview
 
-Everything can be set with a flag or an environment variable:
+The preview is configured with environment variables, passed to `docker run` with `-e`:
 
-| Flag           | Environment variable  | Default                                               |
-|----------------|-----------------------|-------------------------------------------------------|
-| `-addr`        | `PORT`                | `:8080`                                               |
-| `-title`       | `PREVIEW_TITLE`       | `Weekend photos 📸`                                   |
-| `-description` | `PREVIEW_DESCRIPTION` | `Here are the pictures I promised you.`               |
-| `-image`       | `PREVIEW_IMAGE`       | empty (absolute image URL, e.g. `https://…/image.jpg`) |
-| `-site-name`   | `PREVIEW_SITE_NAME`   | empty                                                 |
+| Environment variable  | Default                                               |
+|-----------------------|-------------------------------------------------------|
+| `PREVIEW_TITLE`       | `Weekend photos 📸`                                   |
+| `PREVIEW_DESCRIPTION` | `Here are the pictures I promised you.`               |
+| `PREVIEW_IMAGE`       | empty (absolute image URL, e.g. `https://…/image.jpg`) |
+| `PREVIEW_SITE_NAME`   | empty                                                 |
 
 ```sh
-go run . -title "Team meeting minutes" -description "Please read by Friday"
+docker run -d --name rickroll -p 8080:8080 \
+  -e PREVIEW_TITLE="Team meeting minutes" \
+  -e PREVIEW_DESCRIPTION="Please read by Friday" \
+  ghcr.io/frizzay/rickroll:latest
 ```
+
+Environment variables are fixed when the container is created. To change the preview,
+remove the container with `docker rm -f rickroll` and start it again with the new values.
 
 ## How it works
 
@@ -49,18 +63,7 @@ go run . -title "Team meeting minutes" -description "Please read by Friday"
 - Chat apps cache previews. If you change the title or image, test with a new path
   (e.g. `/photos2`).
 
-## Tests
-
-```sh
-go test ./...
-```
-
-## Container
-
-```sh
-docker build -t rickroll .
-docker run -p 8080:8080 -e PREVIEW_TITLE="Team meeting minutes" rickroll
-```
+## Container image
 
 The image builds a static Go binary on `golang:1.27-alpine3.24` and runs on
 `alpine:3.24` as the user `nobody`.
@@ -73,7 +76,3 @@ severity `HIGH` or `CRITICAL`, the build fails.
 If the workflow runs on `main` and the scan passes, the image is pushed to
 `ghcr.io/frizzay/rickroll`, tagged `latest` and with the commit SHA.
 Pull requests are only built and scanned, not pushed.
-
-```sh
-docker run -p 8080:8080 ghcr.io/frizzay/rickroll:latest
-```
